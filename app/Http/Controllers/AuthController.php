@@ -1,27 +1,38 @@
 <?php
 
 namespace App\Http\Controllers;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
-use Validator;
+use Illuminate\Support\Facades\Validator;
+
 
 class AuthController extends Controller
 {
-
-    public function register(Request $request)
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function register(Request $request): JsonResponse
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'name' => 'required|string',
             'email' => 'required|string|unique:users',
             'password' => 'required|string',
             'c_password' => 'required|same:password'
         ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors()
+            ], 401);
+        }
+
         $user = new User([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
+            'name' => $request["name"],
+            'email' => $request["email"],
+            'password' => bcrypt($request["password"]),
         ]);
 
         if ($user->save()) {
@@ -37,16 +48,23 @@ class AuthController extends Controller
         }
     }
 
-
-   
-
-    public function login(Request $request)
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function login(Request $request): JsonResponse
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'email' => 'required|string|email',
             'password' => 'required|string',
             'remember_me' => 'boolean'
         ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors()
+            ], 401);
+        }
 
         $credentials = request(['email', 'password']);
         if (!Auth::attempt($credentials)) {
@@ -65,14 +83,20 @@ class AuthController extends Controller
         ]);
     }
 
-
-    public function user(Request $request)
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function user(Request $request): JsonResponse
     {
         return response()->json($request->user());
     }
 
-
-    public function logout(Request $request)
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function logout(Request $request): JsonResponse
     {
         $request->user()->tokens()->delete();
 
@@ -81,6 +105,4 @@ class AuthController extends Controller
         ]);
 
     }
-
-
 }
